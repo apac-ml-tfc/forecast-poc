@@ -31,3 +31,13 @@ That is a genereal order to this proccess, however if you are operating this as 
 ## Validating and Importing Target Time Series Data
 
 Open `Validating_and_Importing_Target_Time_Series_Data.ipynb` and follow along there.
+
+Once this has completed you can move onto prepping your Related Time Series data though you may not want to actually delete it after the import completes. 
+If the data resides within your DatasetGroup then models will use it automatically when you train them and you are not able to determine the impact of just your base time series data easily.
+
+## Validating and Importing Related Time Series Data
+
+Amazon Forecast can certainly generate predictions using only the target data but the real power of the service comes into play when adding related time series information to facilitate better understanding of external signals, as well as item metadata that allows DeepAR+ to make assumptions about how a time series may behave when missing chunks of information.
+
+Open `Validating_and_Importing_Related_Time_Series_Data.ipynb` and follow along there to prepare the dataset for the POC/Amazon Forecast.
+
