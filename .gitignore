@@ -131,4 +131,4 @@ dmypy.json
 # Project Settings
 data/
 poc_data/
-
+.ipynb_checkpoints/

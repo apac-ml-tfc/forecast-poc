@@ -41,3 +41,9 @@ Amazon Forecast can certainly generate predictions using only the target data bu
 
 Open `Validating_and_Importing_Related_Time_Series_Data.ipynb` and follow along there to prepare the dataset for the POC/Amazon Forecast.
 
+## Creating and Evaluating Your First Predictors
+
+In Amazon Forecast a model that has been trained on your data is called a Predictor, the notebook below will guide you through using the data you imported earlier to build your first predictors. At the end there is a bonus bit on running AutoML to determine the best. This is advised to be done before going home for the day as the process will take a number of hours to complete.
+
+Open `Creating_and_Evaluating_Predictors.ipynb` and follow along to build these Predictors and see their results.
+
