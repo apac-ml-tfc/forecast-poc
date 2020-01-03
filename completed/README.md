@@ -70,11 +70,23 @@ For a few minutes CloudFormation will be creating the resources described above 
 
 Once it has completed you'll see green text like below indicating that the work has been completed:
 
+![StackWizard5](static/imgs/img6.png)
+
+Now that your environment has been created go to the service page for Sageamaker by clicking `Services` in the top of the console and then searching for `SageMaker` and clicking the service.
+
+
 ![StackWizard5](static/imgs/img7.png)
 
-Now that you have your environment created, you need to save the name of your S3 bucket for future use, you can find it by clicking on the `Outputs` tab and then looking for the resource `S3Bucket`, once you find it copy and paste it to a text file for the time being.
+From the SageMaker console scroll until you see the green box indicating now many notebooks you have in service and click that.
 
 ![StackWizard5](static/imgs/img8.png)
+
+On this page you will see a list of any SageMaker notebooks you have running, simply click the `Open JupyterLab` link on the Forecast POC notebook you have created
+
+![StackWizard5](static/imgs/img9.png)
+
+This will open the Jupyter environment for your POC, think of it as a web based data science IDE if you are not familiar with it. It should Automatically open the `ForecastPOC` folder for you, but if it does not do that by clicking on the folder icon in the browser on the left side of the screen and follow the documentation below to get started with your POC!
+
 
 
 ## Validating and Importing Target Time Series Data
