@@ -12,21 +12,62 @@ If you are not familiar with Amazon Forecast you can learn more about this tool 
 * [GitHub Sample Notebooks](https://github.com/aws-samples/amazon-forecast-samples)
 * [Product Docs](https://docs.aws.amazon.com/forecast/latest/dg/what-is-forecast.html)
 
+## Completed Example
+
+The notebooks have been scrubbed of all output before usage, however if you'd like to see a fully worked out example of this process, explore the notebooks in the `completed` folder.
 
 ## Process:
 
 1. Deploying Your Working Environment
 1. Validating and Importing Target Time Series Data
+1. Validating and Importing Related Time Series Data (To Test)
 1. Creating and Evaluating Your First Predictors
-1. Validating and Importing Related Time Series Data
-1. Creating and Evaluating Your Predictors With Related Time Series Data
+1. Importing Related Time Series Data (To Use)
+1. Creating and Evaluating Related Time Series Enabled Predictors
+1. Next Steps
 
 That is a genereal order to this proccess, however if you are operating this as an assisted 2 day on-site POC. It is recommended that you operate steps 2 and 4 beforehand. Once the related data has been successfully imported you can delete it so that it does not muddy the results from your first Predictor.
 
 
 ## Deploying Your Working Environment
 
-#TODO: Lift this from the existing samples repo
+As mentioned above, the first step is to deploy a CloudFormation template that will perform much of the initial setup work for you. In another browser window or tab, login to your AWS account. Once you have done that, open the link below in a new tab to start the process of deploying the items you need via CloudFormation.
+
+[![Launch Stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home#/stacks/new?stackName=ForecastDemo&templateURL=https://chriskingpartnershare.s3.amazonaws.com/ForecastPOC.yaml)
+
+Follow along with the screenshots below if you have any questions about deploying the stack.
+
+### Cloud Formation Wizard
+
+Start by clicking `Next` at the bottom like this:
+
+![StackWizard](static/imgs/img1.png)
+
+In the next page you need to provide a unique S3 bucket name for your file storage, it is recommended to simply add your first name and last name to the end of the default option as shown below, after that update click `Next` again.
+
+![StackWizard2](static/imgs/img2.png)
+
+This page is a bit longer so scroll to the bottom to click `Next`.
+
+![StackWizard3](static/imgs/img4.png)
+
+
+Again scroll to the bottom, check the box to enable the template to create new IAM resources and then click `Create Stack`.
+
+![StackWizard4](static/imgs/img5.png)
+
+For a few minutes CloudFormation will be creating the resources described above on your behalf it will look like this while it is provisioning:
+
+![StackWizard5](static/imgs/img6.png)
+
+Once it has completed you'll see green text like below indicating that the work has been completed:
+
+![StackWizard5](static/imgs/img7.png)
+
+Now that you have your environment created, you need to save the name of your S3 bucket for future use, you can find it by clicking on the `Outputs` tab and then looking for the resource `S3Bucket`, once you find it copy and paste it to a text file for the time being.
+
+![StackWizard5](static/imgs/img8.png)
+
 
 ## Validating and Importing Target Time Series Data
 
@@ -57,3 +98,6 @@ During this section you'll only be creating new models with Prophet and DeepAR+ 
 
 To get started simply open `Creating_and_Evaluating_Related_Time_Predictors.ipynb` this will be the last section of the POC that is guided and the rest will be an exploratory analysis to determine the value of any improvements.
 
+## Next Steps
+
+The next step is to either compare the results from Forecast against a previous approach and determine which one is more performant, if Forecast is more performant or there is no existing system then the path to production is determining how to integrate the results with planners, analysts, or other software solutions. The data again is exportable in JSON or CSV so it is easy to develop automated procedures for this integration.
