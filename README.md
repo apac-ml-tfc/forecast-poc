@@ -47,3 +47,13 @@ In Amazon Forecast a model that has been trained on your data is called a Predic
 
 Open `Creating_and_Evaluating_Predictors.ipynb` and follow along to build these Predictors and see their results.
 
+## Importing Related Time Series Data
+
+Upon completing the initial models with just the target time series data go back to `Validating_and_Importing_Related_Time_Series_Data.ipynb` and execute the import job again if you deleted it during your validation phase. Once the data has been imported you are ready to move onto the next session of building a model with the related data.
+
+## Creating and Evaluating Related Time Series Enabled Predictors
+
+During this section you'll only be creating new models with Prophet and DeepAR+ this is because they are the only algorithms to incorporate related time series into their forecasts at this time within the service. As existing algorithms are modified or new ones are introduced this section will expand to cover those.
+
+To get started simply open `Creating_and_Evaluating_Related_Time_Predictors.ipynb` this will be the last section of the POC that is guided and the rest will be an exploratory analysis to determine the value of any improvements.
+
