@@ -33,6 +33,12 @@ That is a genereal order to this proccess, however if you are operating this as 
 
 As mentioned above, the first step is to deploy a CloudFormation template that will perform much of the initial setup work for you. In another browser window or tab, login to your AWS account. Once you have done that, open the link below in a new tab to start the process of deploying the items you need via CloudFormation.
 
+This CloudFormation template will compelte the following:
+
+1. Create a SageMaker Role for your POC
+1. Create a SageMaker Notebook Instance (and optional VPC configuration) for your POC
+1. Clone the POC codebase onto the Notebook Instance.
+
 [![Launch Stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home#/stacks/new?stackName=ForecastDemo&templateURL=https://chriskingpartnershare.s3.amazonaws.com/ForecastPOC.yaml)
 
 Follow along with the screenshots below if you have any questions about deploying the stack.
