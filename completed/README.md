@@ -43,6 +43,8 @@ This CloudFormation template will compelte the following:
 
 Follow along with the screenshots below if you have any questions about deploying the stack.
 
+*Note* There is another file inside this repository that is a CF template for building out this POC workshop for Event Engine operated events, it forgoes the VPC configuration but is otherwise the same.
+
 ### Cloud Formation Wizard
 
 Start by clicking `Next` at the bottom like this:
