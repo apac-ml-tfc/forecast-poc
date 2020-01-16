@@ -8,7 +8,23 @@ Parameters:
   NotebookName:
     Type: String
     Default: ForecastPOCNotebook
-    Description: Enter the name of the SageMaker notebook instance. Deafault is PersonalizeDemoLab.
+    Description: Enter the name of the SageMaker notebook instance. Deafault is ForecastPOCNotebook.
+
+  DefaultCodeRepo:
+    Type: String
+    Default: https://github.com/chrisking/ForecastPOC.git
+    Description: Enter the url of a git code repository for this lab
+    
+  InstanceType:
+    Type: String
+    Default: ml.t2.medium
+    AllowedValues:
+      - ml.t2.medium
+      - ml.m4.xlarge
+      - ml.c5.xlarge
+      - ml.p2.xlarge
+      - ml.p3.2xlarge
+    Description: Enter instance type. Default is ml.t2.medium.
 
   VolumeSize:
     Type: Number
@@ -16,14 +32,9 @@ Parameters:
     MinValue: 5
     MaxValue: 16384
     ConstraintDescription: Must be an integer between 5 (GB) and 16384 (16 TB).
-    Description: Enter the size of the EBS volume in GB.
+    Description: Enter the size of the EBS volume in GB. Default is 10 GB.
 
 Resources:
-  # S3 First
-  S3Bucket:
-    Type: AWS::S3::Bucket
-    Properties:
-      BucketName: !Ref BucketName
   # SageMaker Execution Role
   SageMakerIamRole:
     Type: "AWS::IAM::Role"
@@ -51,4 +62,4 @@ Resources:
       NotebookInstanceName: !Ref NotebookName
       RoleArn: !GetAtt SageMakerIamRole.Arn
       VolumeSizeInGB: !Ref VolumeSize
-      DefaultCodeRepository: https://github.com/chrisking/ForecastPOC.git
+      DefaultCodeRepository: !Ref DefaultCodeRepo
