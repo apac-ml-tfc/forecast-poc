@@ -127,3 +127,7 @@ To get started simply open `Creating_and_Evaluating_Related_Time_Predictors.ipyn
 ## Next Steps
 
 The next step is to either compare the results from Forecast against a previous approach and determine which one is more performant, if Forecast is more performant or there is no existing system then the path to production is determining how to integrate the results with planners, analysts, or other software solutions. The data again is exportable in JSON or CSV so it is easy to develop automated procedures for this integration.
+
+## Cleanup
+
+The scripts in this POC provision various Forecast, S3, and IAM resources. If you ran this POC in your own account and would like to avoid ongoing charges related to these resources, open `Cleanup.ipynb` and run the cleanup scripts provided there. Wait for the scripts to complete, then tear down the CloudFormation stack you created at the beginning of these instructions. 
