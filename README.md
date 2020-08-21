@@ -16,17 +16,16 @@ If you are not familiar with Amazon Forecast you can learn more about this tool 
 
 The notebooks have been scrubbed of all output before usage, however if you'd like to see a fully worked out example of this process, explore the notebooks in the `completed` folder.
 
-## Process:
+## Process
 
 1. Deploying Your Working Environment
 1. Validating and Importing Target Time Series Data
-1. Validating and Importing Related Time Series Data (To Test)
 1. Creating and Evaluating Your First Predictors
-1. Importing Related Time Series Data (To Use)
+1. Validating and Importing Related Time Series Data
 1. Creating and Evaluating Related Time Series Enabled Predictors
 1. Next Steps
 
-That is a genereal order to this proccess, however if you are operating this as an assisted 2 day on-site POC. It is recommended that you operate steps 2 and 4 beforehand. Once the related data has been successfully imported you can delete it so that it does not muddy the results from your first Predictor.
+That is a genereal order to this proccess, however if you are operating this as an assisted 2 day on-site POC. It is recommended that you try both data import steps beforehand. Once the related data has been successfully imported you can delete it so that it does not muddy the results from your first Predictor.
 
 
 ## Deploying Your Working Environment
@@ -97,32 +96,28 @@ This will open the Jupyter environment for your POC, think of it as a web based 
 
 ## Validating and Importing Target Time Series Data
 
-Open `Validating_and_Importing_Target_Time_Series_Data.ipynb` and follow along there.
+Open [1.Validate_and_Import_Target_Time_Series_Data.ipynb](1.Validate_and_Import_Target_Time_Series_Data.ipynb) and follow along there.
 
 Once this has completed you can move onto prepping your Related Time Series data though you may not want to actually delete it after the import completes. 
 If the data resides within your DatasetGroup then models will use it automatically when you train them and you are not able to determine the impact of just your base time series data easily.
-
-## Validating and Importing Related Time Series Data
-
-Amazon Forecast can certainly generate predictions using only the target data but the real power of the service comes into play when adding related time series information to facilitate better understanding of external signals, as well as item metadata that allows DeepAR+ to make assumptions about how a time series may behave when missing chunks of information.
-
-Open `Validating_and_Importing_Related_Time_Series_Data.ipynb` and follow along there to prepare the dataset for the POC/Amazon Forecast.
 
 ## Creating and Evaluating Your First Predictors
 
 In Amazon Forecast a model that has been trained on your data is called a Predictor, the notebook below will guide you through using the data you imported earlier to build your first predictors. At the end there is a bonus bit on running AutoML to determine the best. This is advised to be done before going home for the day as the process will take a number of hours to complete.
 
-Open `Creating_and_Evaluating_Predictors.ipynb` and follow along to build these Predictors and see their results.
+Open [2.Create_and_Evaluate_Predictors.ipynb](2.Create_and_Evaluate_Predictors.ipynb) and follow along to build these Predictors and see their results.
 
-## Importing Related Time Series Data
+## Validating and Importing Related Time Series Data
 
-Upon completing the initial models with just the target time series data go back to `Validating_and_Importing_Related_Time_Series_Data.ipynb` and execute the import job again if you deleted it during your validation phase. Once the data has been imported you are ready to move onto the next session of building a model with the related data.
+Amazon Forecast can certainly generate predictions using only the target data but the real power of the service comes into play when adding related time series information to facilitate better understanding of external signals, as well as item metadata that allows DeepAR+ to make assumptions about how a time series may behave when missing chunks of information.
+
+Open [3.Validate_and_Import_Related_Time_Series_Data.ipynb](3.Validate_and_Import_Related_Time_Series_Data.ipynb) and follow along there to prepare the dataset for Amazon Forecast.
 
 ## Creating and Evaluating Related Time Series Enabled Predictors
 
 During this section you'll only be creating new models with Prophet and DeepAR+ this is because they are the only algorithms to incorporate related time series into their forecasts at this time within the service. As existing algorithms are modified or new ones are introduced this section will expand to cover those.
 
-To get started simply open `Creating_and_Evaluating_Related_Time_Predictors.ipynb` this will be the last section of the POC that is guided and the rest will be an exploratory analysis to determine the value of any improvements.
+To get started simply open [4.Create_and_Evaluate_Related_Time_Series_Predictors.ipynb](4.Create_and_Evaluate_Related_Time_Series_Predictors.ipynb) this will be the last section of the POC that is guided and the rest will be an exploratory analysis to determine the value of any improvements.
 
 ## Next Steps
 
@@ -130,4 +125,4 @@ The next step is to either compare the results from Forecast against a previous 
 
 ## Cleanup
 
-The scripts in this POC provision various Forecast, S3, and IAM resources. If you ran this POC in your own account and would like to avoid ongoing charges related to these resources, open `Cleanup.ipynb` and run the cleanup scripts provided there. Wait for the scripts to complete, then tear down the CloudFormation stack you created at the beginning of these instructions. 
+The scripts in this POC provision various Forecast, S3, and IAM resources. If you ran this POC in your own account and would like to avoid ongoing charges related to these resources, open [Cleanup.ipynb](Cleanup.ipynb) and run the cleanup scripts provided there. Wait for the scripts to complete, then tear down the CloudFormation stack you created at the beginning of these instructions. 
