@@ -109,13 +109,13 @@ Open [2.Create_and_Evaluate_Predictors.ipynb](2.Create_and_Evaluate_Predictors.i
 
 ## Validating and Importing Related Time Series Data
 
-Amazon Forecast can certainly generate predictions using only the target data but the real power of the service comes into play when adding related time series information to facilitate better understanding of external signals, as well as item metadata that allows DeepAR+ to make assumptions about how a time series may behave when missing chunks of information.
+Amazon Forecast can certainly generate predictions using only the target data but the real power of the service comes into play when adding related time series information to facilitate better understanding of external signals, as well as item metadata that allows advanced models to make assumptions about how a time series may behave when missing chunks of information.
 
 Open [3.Validate_and_Import_Related_Time_Series_Data.ipynb](3.Validate_and_Import_Related_Time_Series_Data.ipynb) and follow along there to prepare the dataset for Amazon Forecast.
 
 ## Creating and Evaluating Related Time Series Enabled Predictors
 
-During this section you'll only be creating new models with Prophet and DeepAR+ this is because they are the only algorithms to incorporate related time series into their forecasts at this time within the service. As existing algorithms are modified or new ones are introduced this section will expand to cover those.
+During this section you'll only be creating new models with a subset of recipes, because some simpler algorithms offered by the service are not currently able to incorporate related time series into their forecasts. As existing algorithms are modified or new ones are introduced, this section will expand to cover those.
 
 To get started simply open [4.Create_and_Evaluate_Related_Time_Series_Predictors.ipynb](4.Create_and_Evaluate_Related_Time_Series_Predictors.ipynb) this will be the last section of the POC that is guided and the rest will be an exploratory analysis to determine the value of any improvements.
 
