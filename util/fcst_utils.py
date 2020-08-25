@@ -1,13 +1,15 @@
+# Python Built-Ins:
 import time
 import json
 import gzip
 
+# External Dependencies:
 import boto3
 import botocore.exceptions
-
-import pandas as pd
 import matplotlib.pyplot as plt
+import pandas as pd
 
+# Local Dependencies:
 import util.notebook_utils
 
 
