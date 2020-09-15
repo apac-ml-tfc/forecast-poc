@@ -1,7 +1,9 @@
 ---
 AWSTemplateFormatVersion: '2010-09-09'
 
-Description: Workshop event template: Provision SageMaker Notebook and related IAM configuration to work with Amazon Forecast. Clone the PoC codebase into the notebook to get started.
+Description: >-
+  Workshop event template - Provision SageMaker Notebook and related IAM configuration to work with Amazon
+  Forecast. Clone the PoC codebase into the notebook to get started.
 
 Parameters:
   NotebookName:

@@ -1,7 +1,9 @@
 ---
 AWSTemplateFormatVersion: '2010-09-09'
 
-Description: IAM Policies, and SageMaker Notebook to work with Amazon Forecast, it will also clone the POC codebase into the Notebook before you get started.
+Description: >-
+  IAM Policies, and SageMaker Notebook to work with Amazon Forecast, it will also clone the POC codebase into
+  the Notebook before you get started.
 
 Parameters:
   NotebookName:
