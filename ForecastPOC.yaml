@@ -4,7 +4,6 @@ AWSTemplateFormatVersion: '2010-09-09'
 Description: IAM Policies, and SageMaker Notebook to work with Amazon Forecast, it will also clone the POC codebase into the Notebook before you get started.
 
 Parameters:
-
   NotebookName:
     Type: String
     Default: ForecastPOCNotebook
@@ -17,18 +16,19 @@ Parameters:
     MaxValue: 16384
     ConstraintDescription: Must be an integer between 5 (GB) and 16384 (16 TB).
     Description: Enter the size of the EBS volume in GB.
-  
+
   UseVPC:
     Type: String
     AllowedValues:
       - "true"
       - "false"
-      
+    Default: "false"
+
   SecurityGroup:
     # Use String rather than AWS::EC2::SecurityGroup::Id to allow for empty values
     Type: String
     Description: The security group to provide the notebook access within the VPC
-  
+
   PrivateSubnet:
     # Use String rather than AWS::EC2::Subnet::Id to allow for empty values
     Type: String
@@ -60,7 +60,7 @@ Metadata:
 
 Conditions:
   UseOwnVPC: !Equals [!Ref UseVPC, "true"]
-  
+
 Resources:
   # SageMaker Execution Role
   SageMakerIamRole:
@@ -89,7 +89,7 @@ Resources:
       NotebookInstanceName: !Ref NotebookName
       RoleArn: !GetAtt SageMakerIamRole.Arn
       VolumeSizeInGB: !Ref VolumeSize
-      DefaultCodeRepository: https://github.com/chrisking/ForecastPOC.git
+      DefaultCodeRepository: https://github.com/apac-ml-tfc/forecast-poc.git
       SecurityGroupIds:
         - !If [ UseOwnVPC, !Ref SecurityGroup, !Ref "AWS::NoValue"]
       SubnetId: !If [ UseOwnVPC, !Ref PrivateSubnet, !Ref "AWS::NoValue"]

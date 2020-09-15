@@ -1,30 +1,30 @@
 ---
 AWSTemplateFormatVersion: '2010-09-09'
 
-Description: IAM Policies, and SageMaker Notebook to work with Amazon Forecast, it will also clone the POC codebase into the Notebook before you get started.
+Description: Workshop event template: Provision SageMaker Notebook and related IAM configuration to work with Amazon Forecast. Clone the PoC codebase into the notebook to get started.
 
 Parameters:
-
   NotebookName:
     Type: String
     Default: ForecastPOCNotebook
-    Description: Enter the name of the SageMaker notebook instance. Deafault is ForecastPOCNotebook.
+    Description: Enter the name of the SageMaker notebook instance. Default is ForecastPOCNotebook.
 
   DefaultCodeRepo:
     Type: String
-    Default: https://github.com/chrisking/ForecastPOC.git
-    Description: Enter the url of a git code repository for this lab
-    
+    Default: https://github.com/apac-ml-tfc/forecast-poc.git
+    Description: Enter the URL of a git code repository for this lab
+
   InstanceType:
     Type: String
-    Default: ml.t2.medium
+    Default: ml.t3.medium
     AllowedValues:
       - ml.t2.medium
-      - ml.m4.xlarge
+      - ml.t3.medium
+      - ml.m5.xlarge
       - ml.c5.xlarge
       - ml.p2.xlarge
       - ml.p3.2xlarge
-    Description: Enter instance type. Default is ml.t2.medium.
+    Description: Enter instance type. Default is ml.t3.medium.
 
   VolumeSize:
     Type: Number
@@ -53,7 +53,7 @@ Resources:
         - "arn:aws:iam::aws:policy/AmazonS3FullAccess"
         - "arn:aws:iam::aws:policy/AmazonForecastFullAccess"
         - "arn:aws:iam::aws:policy/IAMFullAccess"
-        
+
   # SageMaker notebook
   NotebookInstance:
     Type: "AWS::SageMaker::NotebookInstance"
