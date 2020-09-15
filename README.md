@@ -38,7 +38,10 @@ This CloudFormation template will compelte the following:
 1. Create a SageMaker Notebook Instance (and optional VPC configuration) for your POC
 1. Clone the POC codebase onto the Notebook Instance.
 
-[![Launch Stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home#/stacks/new?stackName=ForecastPOC&templateURL=https://chriskingpartnershare.s3.amazonaws.com/ForecastPOC.yaml)
+| Region                       | Deploy Link |
+|:-----------------------------|:------------|
+| `ap-southeast-1` (Singapore) | [![Launch Stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home#/stacks/new?stackName=ForecastPOC&templateURL=https://public-asean-ml-pocs-ap-southeast-1.s3-ap-southeast-1.amazonaws.com/forecast/ForecastPOC.yaml) |
+| `us-east-1` (US N. Virginia) | [![Launch Stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home#/stacks/new?stackName=ForecastPOC&templateURL=https://public-asean-ml-pocs-us-east-1.s3.amazonaws.com/forecast/ForecastPOC.yaml) |
 
 Follow along with the screenshots below if you have any questions about deploying the stack.
 
