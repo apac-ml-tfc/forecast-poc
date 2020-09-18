@@ -1,7 +1,9 @@
 # Python Built-Ins:
 import gzip
 import json
+import re
 import time
+from types import SimpleNamespace
 from typing import Union
 
 # External Dependencies:
@@ -9,14 +11,221 @@ import boto3
 import botocore.exceptions
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 
 # Local Dependencies:
-import util.notebook_utils
+from . import notebook_utils as notebook
+
+class SchemaAttribute:
+    """SchemaAttribute object corresponding to Amazon Forecast API, with validation methods
+
+    https://docs.aws.amazon.com/forecast/latest/dg/API_SchemaAttribute.html
+    """
+    def __init__(self, AttributeName: str, AttributeType: str):
+        if SchemaAttribute.is_valid_name(AttributeName):
+            self.AttributeName = AttributeName
+        else:
+            raise ValueError(
+                f"'{AttributeName}' is not a valid SchemaAttribute AttributeName - see the API doc"
+            )
+        if SchemaAttribute.is_valid_type(AttributeType):
+            self.AttributeType = AttributeType
+        else:
+            raise ValueError(
+                f"'{AttributeType}' is not a valid SchemaAttribute AttributeType - see the API doc"
+            )
+
+    @staticmethod
+    def is_valid_name(name: str) -> bool:
+        return bool(re.match(r"[a-zA-Z][a-zA-Z0-9_]*", name))
+
+    @staticmethod
+    def is_valid_type(typename: str) -> bool:
+        return typename in ("string", "integer", "float", "timestamp")
+
+    @staticmethod
+    def type_to_numpy_type(typename: str):
+        if typename in ("string", "timestamp"):
+            return str
+        elif typename == "integer":
+            return "Int64"
+        elif typename == "float":
+            return np.float64
+
+
+# Reference structure of domains supported by Forecast (for validation checks, etc).
+DOMAINS = {
+    "RETAIL": SimpleNamespace(
+        target_field="demand",
+        tts=SimpleNamespace(
+            required_fields={
+                "item_id": SchemaAttribute("item_id", "string"),
+                "timestamp": SchemaAttribute("timestamp", "timestamp"),
+                "demand": SchemaAttribute("demand", "float"),
+            },
+            optional_fields={
+                "location": SchemaAttribute("location", "string"),
+            },
+        ),
+    ),
+    "CUSTOM": SimpleNamespace(
+        target_field="target_value",
+        tts=SimpleNamespace(
+            required_fields={
+                "item_id": SchemaAttribute("item_id", "string"),
+                "timestamp": SchemaAttribute("timestamp", "timestamp"),
+                "target_value": SchemaAttribute("target_value", "float"),
+            },
+            optional_fields={},
+        ),
+    ),
+    "INVENTORY_PLANNING": SimpleNamespace(
+        target_field="demand",
+        tts=SimpleNamespace(
+            required_fields={
+                "item_id": SchemaAttribute("item_id", "string"),
+                "timestamp": SchemaAttribute("timestamp", "timestamp"),
+                "demand": SchemaAttribute("demand", "float"),
+            },
+            optional_fields={
+                "location": SchemaAttribute("location", "string"),
+            },
+        ),
+    ),
+    "EC2 CAPACITY": SimpleNamespace(
+        target_field="number_of_instances",
+        tts=SimpleNamespace(
+            required_fields={
+                "instance_type": SchemaAttribute("instance_type", "string"),
+                "timestamp": SchemaAttribute("timestamp", "timestamp"),
+                "number_of_instances": SchemaAttribute("number_of_instances", "integer"),
+            },
+            optional_fields={
+                "location": SchemaAttribute("location", "string"),
+            },
+        ),
+    ),
+    "WORK_FORCE": SimpleNamespace(
+        target_field="workforce_demand",
+        tts=SimpleNamespace(
+            required_fields={
+                "workforce_type": SchemaAttribute("workforce_type", "string"),
+                "timestamp": SchemaAttribute("timestamp", "timestamp"),
+                "workforce_demand": SchemaAttribute("workforce_demand", "float"),
+            },
+            optional_fields={
+                "location": SchemaAttribute("location", "string"),
+            },
+        ),
+    ),
+    "WEB_TRAFFIC": SimpleNamespace(
+        target_field="value",
+        tts=SimpleNamespace(
+            required_fields={
+                "item_id": SchemaAttribute("item_id", "string"),
+                "timestamp": SchemaAttribute("timestamp", "timestamp"),
+                "value": SchemaAttribute("value", "float"),
+            },
+            optional_fields={},
+        ),
+    ),
+    "METRICS": SimpleNamespace(
+        target_field="metric_value",
+        tts=SimpleNamespace(
+            required_fields={
+                "metric_name": SchemaAttribute("metric_name", "string"),
+                "timestamp": SchemaAttribute("timestamp", "timestamp"),
+                "metric_value": SchemaAttribute("metric_value", "float"),
+            },
+            optional_fields={},
+        ),
+    ),
+}
+
+
+FREQUENCIES = {
+    # Configuration of the various Pandas timestamp stuff we need to handle each 'frequency' defined by
+    # Amazon Forecast.
+    "Y": {
+        # Alternative mappers could include:
+        # lambda ts: ts.dt.year
+        # (Performant but not preserving date dtype) or
+        # lambda ts: ts - pd.Timedelta("1 day") * (ts.dt.day - 1)
+        # (Preserves timezone info, but presumed slower - no perf testing done)
+        "dt_series_mapper": lambda ts: pd.to_datetime({ "year": ts.dt.year, "month": 1, "day": 1 }),
+        "dt_offset": pd.tseries.offsets.DateOffset(years=1),
+        "dt_freq": "Y",
+        "dt_periods": 1,
+    },
+    "M": {
+        # Could alternatively consider the below mapper to preserve timezone info? Haven't benchmarked the
+        # efficiency between the two:
+        # lambda ts: ts - pd.Timedelta("1 day") * (ts.dt.day - 1)
+        "dt_series_mapper": lambda ts: pd.to_datetime({
+            "year": ts.dt.year, "month": ts.dt.month, "day": 1
+        }),
+        "dt_offset": pd.tseries.offsets.DateOffset(months=1),
+        "dt_freq": "M",
+        "dt_periods": 1,
+    },
+    "W": {
+        "dt_series_mapper": lambda ts: ts - pd.Timedelta("1 day") * (ts.dt.weekday),
+        "dt_offset": pd.tseries.offsets.DateOffset(weeks=1),
+        "dt_freq": "W",
+        "dt_periods": 1,
+    },
+    "D": {
+        "dt_series_mapper": lambda ts: ts.dt.floor("D"),
+        "dt_offset": pd.tseries.offsets.DateOffset(days=1),
+        "dt_freq": "D",
+        "dt_periods": 1,
+    },
+    "H": {
+        "dt_series_mapper": lambda ts: ts.dt.floor("H"),
+        "dt_offset": pd.tseries.offsets.DateOffset(hours=1),
+        "dt_freq": "H",
+        "dt_periods": 1,
+    },
+    "30min": {
+        "dt_series_mapper": lambda ts: ts.dt.floor("30min"),
+        "dt_offset": pd.tseries.offsets.DateOffset(minutes=30),
+        "dt_freq": "min",
+        "dt_periods": 30,
+    },
+    "15min": {
+        "dt_series_mapper": lambda ts: ts.dt.floor("15min"),
+        "dt_offset": pd.tseries.offsets.DateOffset(minutes=15),
+        "dt_freq": "min",
+        "dt_periods": 15,
+    },
+    "10min": {
+        "dt_series_mapper": lambda ts: ts.dt.floor("10min"),
+        "dt_offset": pd.tseries.offsets.DateOffset(minutes=10),
+        "dt_freq": "min",
+        "dt_periods": 10,
+    },
+    "5min": {
+        "dt_series_mapper": lambda ts: ts.dt.floor("5min"),
+        "dt_offset": pd.tseries.offsets.DateOffset(minutes=5),
+        "dt_freq": "min",
+        "dt_periods": 5,
+    },
+    "1min": {
+        "dt_series_mapper": lambda ts: ts.dt.floor("min"),
+        "dt_offset": pd.tseries.offsets.DateOffset(minutes=1),
+        "dt_freq": "min",
+        "dt_periods": 1,
+    },
+}
+
+
+def validate_forecast_frequency(freq: str) -> None:
+    if freq not in FREQUENCIES:
+        raise ValueError(f"Valid forecast frequencies include: {list(FREQUENCIES.keys())}")
 
 
 def wait_till_delete(callback, check_time = 5, timeout = None):
-
     elapsed_time = 0
     while timeout is None or elapsed_time < timeout:
         try:
@@ -35,8 +244,7 @@ def wait_till_delete(callback, check_time = 5, timeout = None):
 
 
 def wait(callback, time_interval = 10):
-
-    status_indicator = util.notebook_utils.StatusIndicator()
+    status_indicator = notebook.StatusIndicator()
 
     while True:
         status = callback()['Status']
@@ -119,7 +327,6 @@ def get_or_create_role_arn(boto_session=None):
 
 
 def extract_gz( src, dst ):
-    
     print( f"Extracting {src} to {dst}" )    
 
     with open(dst, 'wb') as fd_dst:
