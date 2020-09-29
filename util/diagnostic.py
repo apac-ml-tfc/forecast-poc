@@ -721,12 +721,14 @@ def diagnose(
             ),
         ))
     display(Markdown(f"**Top items by record count:**"))
-    display(add_pct_to_value_counts(unique_dimension_combos, clip=10))
+    unique_dimension_combos_sorted = unique_dimension_combos.sort_values(ascending=False)
+    display(add_pct_to_value_counts(unique_dimension_combos_sorted, clip=10))
     item_records_loglog = plot_loglog(
-        unique_dimension_combos.sort_values(ascending=False),
+        unique_dimension_combos_sorted,
         quantity="record count",
         instance_units=f"items",
     )
+    del unique_dimension_combos_sorted  # Free up some memory
     if item_records_loglog is not None:
         slope = item_records_loglog[0]
         if slope < WARN_THRESH_LOGLOG_HEAD_HEAVY:
