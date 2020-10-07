@@ -2,6 +2,7 @@
 
 # Python Built-Ins:
 from collections import defaultdict
+import contextlib
 import csv
 import json
 import math
@@ -16,6 +17,7 @@ from IPython.display import display, Markdown
 from matplotlib import pyplot as plt
 import numpy as np
 import pandas as pd
+import sqlite3
 
 # Local Dependencies
 from . import fcst_utils as fcst
@@ -655,35 +657,68 @@ def diagnose(
                 # two previously separate ranges into overlap.
                 # TODO: Is there an upper bound on the # iterations required for combining two sane sets?
                 prev_n_ranges = float("inf")
-                while prev_n_ranges > len(total_ranges):
-                    prev_n_ranges = len(total_ranges)
-                    consolidated = pd.merge(total_ranges, total_ranges, on=dimension_fields)
-                    consolidated = consolidated[
-                        (consolidated["prestarts_y"] <= consolidated["ends_x"])
-                        & (consolidated["postends_y"] >= consolidated["starts_x"])
-                    ]
-                    consolidated = consolidated[
-                        (consolidated["starts_y"] <= consolidated["starts_x"])
-                        | (consolidated["ends_y"] >= consolidated["ends_x"])
-                    ]
-                    consolidated["starts"] = consolidated[["starts_x", "starts_y"]].min(axis=1)
-                    consolidated["prestarts"] = consolidated[["prestarts_x", "prestarts_y"]].min(axis=1)
-                    consolidated["ends"] = consolidated[["ends_x", "ends_y"]].max(axis=1)
-                    consolidated["postends"] = consolidated[["postends_x", "postends_y"]].max(axis=1)
-                    consolidated = consolidated.groupby(dimension_fields + ["starts_x"]).agg({
-                        "starts": "min",
-                        "prestarts": "min",
-                        "ends": "max",
-                        "postends": "max",
-                    }).reset_index()
-                    total_ranges = consolidated[
-                        dimension_fields + ["starts", "prestarts", "ends", "postends"]
-                    ].drop_duplicates()
+
+                # Pandas only supports equality joins, with inequality joins implemented via merge() and then
+                # filtering the result set. This is memory-inefficient for big chunk sizes we'd like to 
+                # process, so we'll use an in-mem SQLite connection to do the join in SQL instead.
+                with contextlib.closing(sqlite3.connect(":memory:")) as conn: # Auto-close when done
+                    # Could also consider using:
+                    # with conn: (to auto-commit transaction)
+                    # ...but we don't actually want the overhead of committing.
+                    while prev_n_ranges > len(total_ranges):
+                        prev_n_ranges = len(total_ranges)
+                        total_ranges.to_sql("total_ranges", conn, index=False)  # Export the table to SQLite
+                        consolidated = pd.read_sql_query(
+                            # Self-join on overlapping ranges and pick the furthest-apart start/end:
+                            f"""
+                                select distinct
+                                    { ", ".join(map(lambda dim: f"X.{dim}", dimension_fields)) },
+                                    X.starts as starts_x,
+                                    min(X.starts, Y.starts) as starts,
+                                    min(X.prestarts, Y.prestarts) as prestarts,
+                                    max(X.ends, Y.ends) as ends,
+                                    max(X.postends, Y.postends) as postends
+                                from
+                                    total_ranges X join total_ranges Y on
+                                    { " and ".join(map(lambda dim: f"X.{dim} = Y.{dim}", dimension_fields))}
+                                    and X.ends >= Y.prestarts
+                                    and X.starts <= Y.postends
+                                    and (X.starts >= Y.starts or X.ends <= Y.ends)
+                            """,
+                            conn,
+                        )
+                        # Restore the pandas field types from SQLite import:
+                        for field in ["starts_x", "starts", "prestarts", "ends", "postends"]:
+                            consolidated[field] = pd.to_datetime(consolidated[field])
+                        for field in dimension_fields:
+                            consolidated[field] = consolidated[field].astype(total_ranges[field].dtype)
+
+                        # Clear out the SQLLite table for next loop
+                        with contextlib.closing(conn.cursor()) as cursor: # auto-closes
+                            cursor.execute("drop table total_ranges")#
+
+                        # The above join isn't sufficient by itself, because the self-join path allows
+                        # redundant ranges through. So we also summarize by left start date and drop
+                        # duplicates, to clear those out:
+                        # TODO: Move entirely into SQL for more efficient execution planning?
+                        consolidated = consolidated.groupby(dimension_fields + ["starts_x"]).agg({
+                            "starts": "min",
+                            "prestarts": "min",
+                            "ends": "max",
+                            "postends": "max",
+                        }).reset_index()
+                        total_ranges = consolidated[
+                            dimension_fields + ["starts", "prestarts", "ends", "postends"]
+                        ].drop_duplicates()
+                    # endwhile prev_n_ranges > len(total_ranges):
+                # endwith sqllite connection
+            # endif frequency is not None:
         # endfor tts_chunk in tts_chunker
     # endfor tts_filename in tts_filenames
 
     # Processing loop finished - report generation starts here:
 
+    total_ranges.sort_values(["item_id", "location", "starts", "ends"], ascending=False).to_csv("total_ranges_chunk2.csv", index=False)
     # Some useful pre-report setup:
     if frequency is not None:
         # global timestamps are strings only because they can be tracked even when frequency
