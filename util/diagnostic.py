@@ -564,14 +564,20 @@ def diagnose(
             for fname in dimension_fields:
                 chunk_unique_vals = tts_chunk[fname].value_counts(dropna=False)
                 if fname in unique_dimension_vals:
-                    unique_dimension_vals[fname] += chunk_unique_vals
+                    unique_dimension_vals[fname] = unique_dimension_vals[fname].add(
+                        chunk_unique_vals,
+                        fill_value=0,  # Need to use this or we get NaN for combos not in the chunk
+                    ).astype(int)  # For some reason this add() converts to float by default
                 else:
                     unique_dimension_vals[fname] = chunk_unique_vals
             chunk_dimension_combos = tts_chunk.groupby(dimension_fields).size()
             if unique_dimension_combos is None:
                 unique_dimension_combos = chunk_dimension_combos
             else:
-                unique_dimension_combos += chunk_dimension_combos
+                unique_dimension_combos = unique_dimension_combos.add(
+                    chunk_dimension_combos,
+                    fill_value=0,  # Need to use this or we get NaN for combos not in the chunk
+                ).astype(int)  # For some reason this add() converts to float by default
 
             if frequency is not None:
                 # In this section, we'll construct/update the list of observed contiguous ranges.
