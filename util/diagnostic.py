@@ -107,7 +107,7 @@ def sniff_csv_file(filepath: str) -> Tuple[Union[List[str], None], int]:
         ncols = len(row1)
         # If any cells in first row don't fit the valid header type, assume not a header
         # TODO: Improve this - probably breaks for metadata files
-        if not all(fcst.SchemaAttribute.is_valid_type(cell) for cell in row1):
+        if not all(fcst.SchemaAttribute.is_valid_name(cell) for cell in row1):
             return None, ncols
         else:
             return row1, ncols
@@ -426,7 +426,7 @@ def diagnose(
         tts_chunker = pd.read_csv(
             tts_filename,
             chunksize=CHUNKSIZE,
-            header=None if header_columns is None else "infer",
+            header=None if header_columns is None else 0,
             names=[f["AttributeName"] for f in tts_schema["Attributes"]] if tts_schema else None,
             dtype={
                 f["AttributeName"]: fcst.SchemaAttribute.type_to_numpy_type(f["AttributeType"])
