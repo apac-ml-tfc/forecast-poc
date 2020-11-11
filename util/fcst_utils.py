@@ -383,7 +383,7 @@ def plot_forecasts(
         forecast_tsnums = mpl.dates.date2num(forecast.index)
 
         # Create our figure:
-        fig = plt.figure(figsize=(15, 6))
+        fig = plt.figure(figsize=(15, 5))
         ax = plt.gca()
         ax.set_title(f"Item {item_id}")
 
@@ -396,6 +396,25 @@ def plot_forecasts(
                 alpha=0.3,
                 label="80% Confidence Interval",
             )
+        elif "p10" in forecast or "p90" in forecast:
+            islower = "p10" in forecast
+            quantile = "p10" if islower else "p90"
+            anchor = "p50" if "p50" in forecast else "mean" if "mean" in forecast else None
+            if anchor is not None:
+                ax.fill_between(
+                    forecast_tsnums,
+                    forecast[quantile if islower else anchor],
+                    forecast[anchor if islower else quantile],
+                    alpha=0.3,
+                    label=f"{quantile if islower else anchor}-{anchor if islower else quantile} Interval",
+                )
+            else:
+                ax.plot_date(
+                    forecast_tsnums,
+                    forecast[quantile],
+                    fmt="-",
+                    label=f"{field} Quantile",
+                )
 
         if actuals is not None:
             # A black line plot of the actuals (training + test):
@@ -414,7 +433,7 @@ def plot_forecasts(
                 forecast_tsnums,
                 forecast["p50"],
                 fmt="-",
-                label="Prediction Median"
+                label="Prediction Median",
             )
         if "mean" in forecast:
             # Color-2 line identifying the prediction mean:
@@ -422,7 +441,18 @@ def plot_forecasts(
                 forecast_tsnums,
                 forecast["mean"],
                 fmt="-",
-                label="Prediction Mean"
+                label="Prediction Mean",
+            )
+
+        for field in filter(
+            lambda f: re.match(r"p\d\d", f) and f not in ("p10", "p50", "p90"),
+            forecast.columns
+        ):
+            ax.plot_date(
+                forecast_tsnums,
+                forecast[field],
+                fmt="--",
+                label=f"{field} Quantile",
             )
 
         ax.set_xlabel(xlabel)
