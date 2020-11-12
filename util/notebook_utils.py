@@ -1,10 +1,12 @@
 # Python Built-Ins:
+import os
 import sys
-from typing import Iterable, Union
+from typing import Iterable, List, Union
 
 # External Dependencies:
 from IPython.display import display, HTML
 import ipywidgets
+import pandas as pd
 
 
 widget_table = {}
@@ -76,3 +78,25 @@ class StatusIndicator:
     def end(self):
         if self.need_newline:
             sys.stdout.write("\n")
+
+
+def list_files_with_extension(dir_name: str, ext: str="csv") -> List[str]:
+    """Recursively search a folder for files with extension 'ext', returning sorted list"""
+    ext = ext.lower()
+    target_files = []
+    for root, dirs, files in os.walk(dir_name):
+        for name in files:
+            if name.lower().endswith("." + ext):
+                target_files.append(os.path.join(root, name))
+    return sorted(target_files)
+
+
+def read_multipart_csv(files: List[str]) -> pd.DataFrame:
+    """Read a set of CSV files which share the same structure into a DataFrame"""
+    dfs = []
+    for file in files:
+        try:
+            dfs.append(pd.read_csv(file))
+        except pd.errors.EmptyDataError:
+            pass
+    return pd.concat(dfs)
