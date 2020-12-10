@@ -718,7 +718,6 @@ def diagnose(
 
     # Processing loop finished - report generation starts here:
 
-    total_ranges.sort_values(["item_id", "location", "starts", "ends"], ascending=False).to_csv("total_ranges_chunk2.csv", index=False)
     # Some useful pre-report setup:
     if frequency is not None:
         # global timestamps are strings only because they can be tracked even when frequency
