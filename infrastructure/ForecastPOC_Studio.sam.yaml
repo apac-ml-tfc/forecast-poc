@@ -49,13 +49,6 @@ Parameters:
       Comma-separated list of subnet IDs to use (e.g. subnet-xxxxxx), or blank to use all default subnets.
     Default: ''
 
-  LambdaSecurityGroupIds:
-    Type: String
-    Description: >-
-      Comma-separated list of security group IDs for Lambda to use in setting up our Studio EFS filesystem
-      (or blank to select defaults).
-    Default: ''
-
 Resources:
 
 ########  THE BASICS: SageMaker perms & notebook instance  ########
@@ -222,7 +215,6 @@ Resources:
       ServiceToken: !GetAtt StudioDomainFunction.Arn
       VPC: !Ref VpcId
       SubnetIds: !Ref SubnetIds
-      SecurityGroupIds: !Ref LambdaSecurityGroupIds
       DomainName: 'PoCDomain'
       DefaultUserSettings:
         ExecutionRole: !GetAtt SageMakerExecutionRole.Arn
@@ -259,8 +251,7 @@ Resources:
     Type: 'AWS::EC2::Subnet'
     Properties:
       AvailabilityZone: !Select [0, !GetAZs '']
-      # TODO: Have the Studio function (or something else? compose an appropriate CIDR)
-      CidrBlock: '172.31.255.192/26'
+      CidrBlock: !GetAtt StudioDomain.ProposedAdminSubnetCidr
       # TODO: Support IPv6
       #AssignIpv6AddressOnCreation: false
       #Ipv6CidrBlock: !Select [3, !Cidr [!Select [0, !GetAtt 'VPC.Ipv6CidrBlocks'], 4, 64]]
@@ -296,6 +287,21 @@ Resources:
       DestinationCidrBlock: '0.0.0.0/0'
       NatGatewayId: !Ref NatGateway
 
+  LambdaPublicAccessSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: >-
+        Security group conferring public internet access to SageMaker Studio user setup Lambda
+      SecurityGroupEgress:
+        - CidrIp: '0.0.0.0/0'
+          Description: All traffic
+          IpProtocol: '-1'
+      SecurityGroupIngress:
+        - CidrIp: '0.0.0.0/0'
+          Description: All traffic
+          IpProtocol: '-1'
+      VpcId: !GetAtt StudioDomain.VpcId
+
   # Now ready to define the implementation of our custom resource:
   UserSetupFunction:
     Type: 'AWS::Serverless::Function'
@@ -321,7 +327,10 @@ Resources:
         - Arn: !GetAtt StudioEFSAccessPoint.Arn
           LocalMountPath: /mnt/efs
       VpcConfig:
-        SecurityGroupIds: !Split [',', !GetAtt StudioDomain.SecurityGroupIds]
+        SecurityGroupIds:
+          - !Ref LambdaPublicAccessSecurityGroup  # Public access for fetching from GitHub/etc
+          - !GetAtt StudioDomain.OutboundEFSSecurityGroupId  # Access to connect to Studio home filesystem
+          - !GetAtt StudioDomain.InboundEFSSecurityGroupId  # TODO: Is this actually needed?
         SubnetIds:
           - !Ref LambdaSubnet
 
@@ -351,6 +360,4 @@ Outputs:
   SubnetIds:
     Description: VPC Subnet IDs
     Value: !GetAtt StudioDomain.SubnetIds
-  SecurityGroupIds:
-    Description: VPC Security Group IDs
-    Value: !GetAtt StudioDomain.SecurityGroupIds
+

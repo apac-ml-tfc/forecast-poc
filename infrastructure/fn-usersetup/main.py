@@ -56,13 +56,13 @@ def handle_create(event, context):
     logging.info("**Received create request")
     resource_config = event["ResourceProperties"]
     logging.info("**Setting up user")
-    response_data = create_user_setup(resource_config)
+    result = create_user_setup(resource_config)
     cfnresponse.send(
         event,
         context,
         cfnresponse.SUCCESS,
-        { "UserProfileName": response_data["UserProfileName"] },
-        physicalResourceId=response_data["UserProfileName"],
+        { "UserProfileName": result["UserProfileName"] },
+        physicalResourceId=result["UserProfileName"],
     )
 
 

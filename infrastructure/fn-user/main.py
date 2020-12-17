@@ -48,17 +48,19 @@ def handle_create(event, context):
     resource_config = event["ResourceProperties"]
 
     logging.info("**Creating user profile")
-    response_data = create_user_profile(resource_config)
+    result = create_user_profile(resource_config)
     # TODO: Do we need to wait for completion?
+    response = {
+        "UserProfileName": result["UserProfileName"],
+        "HomeEfsFileSystemUid": result["HomeEfsFileSystemUid"],
+    }
+    print(response)
     cfnresponse.send(
         event,
         context,
         cfnresponse.SUCCESS,
-        {
-            "UserProfileName": response_data["UserProfileName"],
-            "HomeEfsFileSystemUid": response_data["HomeEfsFileSystemUid"],
-        },
-        physicalResourceId=response_data["UserProfileName"],
+        response,
+        physicalResourceId=result["UserProfileName"],
     )
 
 

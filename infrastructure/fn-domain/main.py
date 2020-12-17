@@ -18,6 +18,9 @@ import boto3
 from botocore.exceptions import ClientError
 import cfnresponse
 
+# Local Dependencies:
+import vpctools
+
 ec2 = boto3.client("ec2")
 smclient = boto3.client("sagemaker")
 
@@ -55,23 +58,40 @@ def handle_create(event, context):
     logging.info("**Received create request")
     resource_config = event["ResourceProperties"]
 
+    # We split out pre- and post-processing because we'd like to always report our correct physicalResourceId
+    # if erroring out after the actual creation, so that the subsequent deletion request can clean up.
+    logging.info("**Preparing studio domain creation parameters")
+    create_domain_args = preprocess_create_domain_args(resource_config)
     logging.info("**Creating studio domain")
-    response_data = create_studio_domain(resource_config)
-    cfnresponse.send(
-        event,
-        context,
-        cfnresponse.SUCCESS,
-        {
-            "DomainId": response_data["DomainId"],
-            "DomainName": response_data["DomainName"],
-            "HomeEfsFileSystemId": response_data["HomeEfsFileSystemId"],
-            "SubnetIds": ",".join(response_data["SubnetIds"]),
-            "SecurityGroupIds": ",".join(response_data["SecurityGroupIds"]),
-            "Url": response_data["Url"],
-            "VpcId": response_data["VpcId"],
-        },
-        physicalResourceId=response_data["DomainId"],
-    )
+    creation = smclient.create_domain(**create_domain_args)
+    _, _, domain_id = creation["DomainArn"].rpartition("/")
+    try:
+        result = post_domain_create(domain_id)
+        domain_desc = result["DomainDescription"]
+        response = {
+            "DomainId": domain_desc["DomainId"],
+            "DomainName": domain_desc["DomainName"],
+            "HomeEfsFileSystemId": domain_desc["HomeEfsFileSystemId"],
+            "SubnetIds": ",".join(domain_desc["SubnetIds"]),
+            "Url": domain_desc["Url"],
+            "VpcId": domain_desc["VpcId"],
+            "ProposedAdminSubnetCidr": result["ProposedAdminSubnetCidr"],
+            "InboundEFSSecurityGroupId": result["InboundEFSSecurityGroupId"],
+            "OutboundEFSSecurityGroupId": result["OutboundEFSSecurityGroupId"],
+        }
+        print(response)
+        cfnresponse.send(event, context, cfnresponse.SUCCESS, response, physicalResourceId=domain_id)
+    except Exception as e:
+        logging.error("Uncaught exception in post-creation processing")
+        traceback.print_exc()
+        cfnresponse.send(
+            event,
+            context,
+            cfnresponse.FAILED,
+            {},
+            physicalResourceId=domain_id,
+            error=str(e),
+        )
 
 
 def handle_delete(event, context):
@@ -116,12 +136,11 @@ def handle_update(event, context):
     )
 
 
-def create_studio_domain(config):
+def preprocess_create_domain_args(config):
     default_user_settings = config["DefaultUserSettings"]
     domain_name = config["DomainName"]
     vpc_id = config.get("VPC")
     subnet_ids = config.get("SubnetIds")
-    security_group_ids = config.get("SecurityGroupIds")
 
     if not vpc_id:
         # Try to look up the default VPC ID:
@@ -162,83 +181,41 @@ def create_studio_domain(config):
     elif isinstance(subnet_ids, str):
         subnet_ids = subnet_ids.split(",")
 
-    response = smclient.create_domain(
-        DomainName=domain_name,
-        AuthMode="IAM",
-        DefaultUserSettings=default_user_settings,
-        SubnetIds=subnet_ids,
-        VpcId=vpc_id,
-    )
+    return {
+        "DomainName": domain_name,
+        "AuthMode": "IAM",
+        "DefaultUserSettings": default_user_settings,
+        "SubnetIds": subnet_ids,
+        "VpcId": vpc_id,
+    }
 
-    domain_id = response["DomainArn"].split("/")[-1]
+def post_domain_create(domain_id):
     created = False
     time.sleep(0.2)
     while not created:
-        response = smclient.describe_domain(DomainId=domain_id)
-        if response["Status"] == "InService":
+        description = smclient.describe_domain(DomainId=domain_id)
+        status_lower = description["Status"].lower()
+        if status_lower == "inservice":
             created = True
             break
+        elif "fail" in status_lower:
+            raise ValueError(
+                f"Domain {domain_id} entered failed status"
+            )
         time.sleep(5)
     logging.info("**SageMaker domain created successfully: %s", domain_id)
 
-    if not security_group_ids:
-        available_security_groups = ec2.describe_security_groups(
-            Filters=[
-                { "Name": "vpc-id", "Values": [vpc_id] },
-            ],
-        )["SecurityGroups"]
-        print(f"Found {len(available_security_groups)} security groups in VPC")
-        nfs_security_groups = ec2.describe_security_groups(
-            Filters=[
-                { "Name": "vpc-id", "Values": [vpc_id] },
-                {
-                    "Name": "group-name",
-                    "Values": [
-                        f"security-group-for-outbound-nfs-{domain_id}",
-                        f"security-group-for-inbound-nfs-{domain_id}",
-                    ],
-                },
-            ],
-        )["SecurityGroups"]
-        print(f"Found {len(nfs_security_groups)} security groups associated with SMStudio")
-        public_security_groups = list(filter(
-            lambda sg: len(list(filter(
-                lambda perm: len(list(filter(
-                    lambda ip_range: ip_range.get("CidrIp") == "0.0.0.0/0",
-                    perm.get("IpRanges", []),
-                ))),
-                sg.get("IpPermissionsEgress", []),
-            ))),
-            available_security_groups,
-        ))
-        print(f"Found {len(public_security_groups)} security groups with public access")
-        if len(nfs_security_groups) > 1 and len(nfs_security_groups) < 5:
-            print("Setting preferred config")
-            security_group_ids = list(
-                map(lambda sg: sg["GroupId"], nfs_security_groups)
-            )
-            if len(public_security_groups) > 0:
-                security_group_ids.append(public_security_groups[0]["GroupId"])
-                print(f"Using preferred SG config {security_group_ids}")
-            else:
-                print(f"Using NFS SG config with NO PUBLIC SGs {security_group_ids}")
-        elif len(public_security_groups) == 1:
-            print(f"Found exactly one public security group:\n{public_security_groups[0]}")
-            security_group_ids = [public_security_groups[0]["GroupId"]]
-        elif len(public_security_groups) > 1:
-            print(f"Found {len(public_security_groups)} public security groups:\n{public_security_groups}")
-            security_group_ids = [public_security_groups[0]["GroupId"]]
-        elif len(available_security_groups) == 1:
-            print(f"Found exactly one (non-public) security group:\n{available_security_groups[0]}")
-            security_group_ids = [available_security_groups[0]["GroupId"]]
-        elif len(available_security_groups) > 1:
-            print(f"Found {len(available_security_groups)} (non-public) security groups:\n{available_security_groups}")
-            security_group_ids = [available_security_groups[0]["GroupId"]]
-        else:
-            raise ValueError(f"Couldn't find any security groups in VPC {vpc_id}!")
-
-    response["SecurityGroupIds"] = security_group_ids
-    return response
+    vpc_id = description["VpcId"]
+    # Retrieve the VPC security groups set up by SageMaker for EFS communication:
+    inbound_efs_sg_id, outbound_efs_sg_id = vpctools.get_studio_efs_security_group_ids(domain_id, vpc_id)
+    # Propose a valid subnet to create in this VPC for managing further setup actions:
+    proposed_admin_subnet = vpctools.propose_subnet(vpc_id)
+    return {
+        "DomainDescription": description,
+        "ProposedAdminSubnetCidr": proposed_admin_subnet["CidrBlock"],
+        "InboundEFSSecurityGroupId": inbound_efs_sg_id,
+        "OutboundEFSSecurityGroupId": outbound_efs_sg_id,
+    }
 
 
 def delete_domain(domain_id):
